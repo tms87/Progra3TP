@@ -9,7 +9,8 @@ public enum Direccion {
 	D_ARRIBA(-1,1),
 	D_ABAJO(-1,-1),
 	I_ARRIBA(1,1),
-	I_ABAJO(1,-1);
+	I_ABAJO(1,-1),
+	IGUAL(0,0);
 
 	private int x;
 	private int y;

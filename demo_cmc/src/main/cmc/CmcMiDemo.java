@@ -15,7 +15,6 @@ package cmc;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +22,7 @@ import java.util.Set;
 import graficos.Area;
 import graficos.Punto;
 import mapa.MapaInfo;
+import model.PuntoKey;
 import model.VerticesArea;
 import utils.AreaUtils;
 
@@ -30,8 +30,8 @@ public class CmcMiDemo {
 	private MapaInfo mapa;
 	private CmcImple cmc;
 	private Map<Punto[],Double> mapDistancia = new HashMap<>();
-	private List<Punto> disponibles;
-	private Map<Punto[],Punto[]> puntosIntermedios ;
+	private List<graficos.Punto> disponibles;
+	private Map<PuntoKey[],Punto[]> puntosIntermedios = new HashMap<>();
 	private Set<Punto> usados = new HashSet<>();
 	
 	public CmcMiDemo(MapaInfo mapa, CmcImple cmc) {
@@ -47,13 +47,14 @@ public class CmcMiDemo {
 	
 	private void obtenerCamino() {
 		Punto[] puntos = seleccionarPuntos();
+		Punto[] pIntermedios = puntosIntermedios.get(puntos);
 	}
 
 	private Punto[] seleccionarPuntos() {
 		Double dist = Double.MAX_VALUE;
 		Punto[] ret = null;
 		for (Punto[] key : mapDistancia.keySet()) {
-			if (dist.compareTo(mapDistancia.get(key))< 0){
+			if (dist.compareTo(mapDistancia.get(key))> 0){
 				dist = mapDistancia.get(key);
 				ret = key;
 			}
@@ -64,14 +65,14 @@ public class CmcMiDemo {
 
 	private void popularMapPuntosIntermedios() {
 		List<Area> areas = mapa.getAreas();
-		for (Punto puntoA : disponibles) {
-			for (Punto puntoB : disponibles) {
+		for (int i = 0; i < disponibles.size(); i++) {
+			for (int j = i+1; j < disponibles.size(); j++) {
 				boolean isInside = false; 
 				for (Area area : areas) {
-					Area a = new Area(puntoA, puntoB, 0);
+					Area a = new Area(disponibles.get(i), disponibles.get(j), 0);
 					isInside = AreaUtils.isAinsideB(a, area);
 					if(isInside){
-						puntosIntermedios.put(new Punto[]{puntoA,puntoB},generarPuntosIntermedios(area));
+						puntosIntermedios.put(new PuntoKey[]{new PuntoKey(disponibles.get(i)),new PuntoKey(disponibles.get(j))},generarPuntosIntermedios(area));
 					}
 				}
 			}
