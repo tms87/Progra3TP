@@ -18,4 +18,9 @@ public class PuntoKey extends graficos.Punto {
 				return true;
 		return false;
 	}
+	
+	@Override
+	public int hashCode() {
+		return this.x+this.y;
+	}
 }
