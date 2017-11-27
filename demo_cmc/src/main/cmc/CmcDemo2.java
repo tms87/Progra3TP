@@ -1,6 +1,7 @@
 
 package cmc;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 /**
  * Obtiene la lista de los puntos marcados en la matriz (mapa)
@@ -17,7 +18,6 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -25,15 +25,17 @@ import graficos.Area;
 import graficos.Punto;
 import mapa.MapaInfo;
 import model2.Arista;
+import model2.Camino;
+import model2.Grafo;
 import model2.Nodo;
 
 public class CmcDemo2 {
 	private MapaInfo mapa;
 	private CmcImple cmc;
-	private Set<Punto> puntosCriticos = new HashSet<>();
 	private Set<Arista> aristas = new HashSet<>();
 	private Set<Area> areas = new HashSet<>();
-	private Set<Nodo> grafo = new HashSet<>();
+	private Grafo grafo = new Grafo();
+	List<Punto> puntosTest = new ArrayList<>();
 
 	public CmcDemo2(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
@@ -47,16 +49,83 @@ public class CmcDemo2 {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println("aristas generadas!");
+//		dibujarAristas();
 		obtenerCaminos();
-		dibujarAristas();
 	}
 
 	private void obtenerCaminos() {
 		for (int i = 0; i < mapa.getPuntos().size(); i++) {
 			for (int j = i+1; j < mapa.getPuntos().size(); j++) {
-				
+				Camino camino = getCamino(mapa.getPuntos().get(i),mapa.getPuntos().get(j));
+				camino.dibujar(cmc);
 			}
 		}
+	}
+
+	private Camino getCamino(Punto origen, Punto destino) {
+		System.out.println("inicia getCamino");
+		Nodo nDest = grafo.getNodo(destino);
+		Grafo grafoParcial = new Grafo();
+		Nodo newDest = new Nodo(destino);
+		newDest.costoMinimoAcumulado = 0D;
+		grafoParcial.nodos.add(newDest);
+		List<Nodo> nodosActivos = new ArrayList<>();
+		for (Arista arista : nDest.aristas) {
+			Punto punto = (arista.origen != destino)?arista.origen:arista.destino;
+			Nodo nodo = new Nodo(punto);
+			nodo.aristas.add(arista);
+			nodo.costoMinimoAcumulado = arista.costo;
+			nodo.antecesor = nDest;
+			nodosActivos.add(nodo);
+			grafoParcial.nodos.add(nodo);
+		}
+		System.out.println("primer paso listo");
+		buscarCamino(nodosActivos,grafoParcial,origen);
+		Camino camino = grafoParcial.generarCamino(grafoParcial.getNodo(origen));
+		return camino;
+	}
+
+	private void buscarCamino(List<Nodo> nodosActivos, Grafo grafoParcial, Punto destino) {
+		System.out.println("inicia BuscarCamino");
+		List<Nodo> nuevosActivos = new ArrayList<>();
+		for (Nodo nodo : nodosActivos) {
+			Nodo nodoGrafo = grafo.getNodo(nodo.punto);
+			for (Arista arista : nodoGrafo.aristas) {
+				Punto punto = (arista.origen != nodo.punto)?arista.origen:arista.destino;
+				if(punto.igual(nodo.antecesor.punto)){
+					continue;
+				}
+				double costo = nodo.costoMinimoAcumulado+arista.costo;
+				if (costo < grafoParcial.costoSolucion){
+					Nodo tmp = grafoParcial.getNodo(punto);
+					if (tmp != null){
+						if (tmp.costoMinimoAcumulado > costo){
+							tmp.costoMinimoAcumulado = costo;
+							tmp.removerArista(tmp.antecesor.punto);
+							tmp.antecesor = nodo;
+							tmp.aristas.add(arista);
+							if (!nuevosActivos.contains(tmp) && !nuevosActivos.contains(tmp) && !tmp.punto.igual(destino))
+								nuevosActivos.add(tmp);
+						} else {
+							if (!nodosActivos.contains(tmp) && !nuevosActivos.contains(tmp) && !tmp.punto.igual(destino))
+								nuevosActivos.add(tmp);
+						}
+					} else {
+						tmp = new Nodo(punto);
+						tmp.aristas.add(arista);
+						tmp.costoMinimoAcumulado = costo;
+						tmp.antecesor = nodo;
+						grafoParcial.nodos.add(tmp);
+						if (!tmp.punto.igual(destino)){
+							nuevosActivos.add(tmp);
+						}
+					}
+				}
+			}
+		}
+		if (!nuevosActivos.isEmpty())
+			buscarCamino(nuevosActivos,grafoParcial,destino);
 	}
 
 	private void procesarAreas() {
@@ -73,20 +142,18 @@ public class CmcDemo2 {
 			}
 		}
 	}
-
 	private void dibujarAristas() {
 		for (Arista arista : aristas) {
 			List<Punto> lista = arista.puntos;
 			System.out.println("arista: "+arista.origen.x+" "+arista.origen.y+" "+arista.destino.x+" "+arista.destino.y+" "+"costo: "+arista.costo);
 			cmc.dibujarCamino(lista);
 		}
-		
 	}
 
 	private void popularGrafo() {
 		for (Punto punto : mapa.getPuntos()) {
 			Nodo nodo = new Nodo(punto);
-			grafo.add(nodo);
+			grafo.nodos.add(nodo);
 		}
 		Iterator<Area> iterador = areas.iterator();
 		while(iterador.hasNext()) {
@@ -96,42 +163,32 @@ public class CmcDemo2 {
 			int maxX = (int) ((rec.getMaxX()+1 > 800)?800:rec.getMaxX()+1);
 			int minX = (rec.x-1 < 0)?0:rec.x-1;
 			int minY = (rec.y-1 < 0)?0:rec.y-1;
-//			grafo.add(new Nodo(new Punto(minX,minY)));
-//			grafo.add(new Nodo(new Punto(minX,maxY)));
-//			grafo.add(new Nodo(new Punto(maxX,minY)));
-//			grafo.add(new Nodo(new Punto(maxX,maxY)));
-			puntosCriticos.add(new Punto(minX,minY));
-			puntosCriticos.add(new Punto(minX,maxY));
-			puntosCriticos.add(new Punto(maxX,minY));
-			puntosCriticos.add(new Punto(maxX,maxY));
+			grafo.nodos.add(new Nodo(new Punto(minX,minY)));
+			System.out.println("x: "+minX+" y: "+minY);
+			grafo.nodos.add(new Nodo(new Punto(minX,maxY)));
+			System.out.println("x: "+minX+" y: "+maxY);
+			grafo.nodos.add(new Nodo(new Punto(maxX,minY)));
+			System.out.println("x: "+maxX+" y: "+minY);
+			grafo.nodos.add(new Nodo(new Punto(maxX,maxY)));
+			System.out.println("x: "+maxX+" y: "+maxY);
 		}
 	}
 	
 	private void generarAristasIniciales() throws Exception {
-//		Iterator<Nodo> it = grafo.iterator();
-//		while (it.hasNext()) {
-//			Nodo nodo = (Nodo) it.next();
-//			Iterator<Nodo> it2 = grafo.iterator();
-//			while (it2.hasNext()) {
-//				Nodo nodo2 = (Nodo) it2.next();
-//				if(!nodo.equals(nodo2)){
-//					Arista arista = generarArista(nodo.punto, nodo2.punto);
-//					if (arista != null)
-//						nodo.aristas.add(arista);
-//						nodo2.aristas.add(arista);
-//				}
-//			}
-//			
-//		}
-		List<Punto> listaPuntos = new ArrayList<>();
-		listaPuntos.addAll(mapa.getPuntos());
-		listaPuntos.addAll(puntosCriticos);
-		for (Punto puntoA : listaPuntos) {
-			for (Punto puntoB : listaPuntos) {
-				if (!puntoA.igual(puntoB)) {
-					Arista arista = generarArista(puntoA, puntoB);
-					if (arista != null)
-						aristas.add(arista);
+		Iterator<Nodo> it = grafo.nodos.iterator();
+		while (it.hasNext()) {
+			Nodo nodo = (Nodo) it.next();
+			Iterator<Nodo> it2 = grafo.nodos.iterator();
+			while (it2.hasNext()) {
+				Nodo nodo2 = (Nodo) it2.next();
+				if(!nodo.equals(nodo2)){
+					if (!nodo.existeArista(nodo.punto, nodo2.punto)){
+						Arista arista = generarArista(nodo.punto, nodo2.punto);
+						if (arista != null && arista.costo < Double.MAX_VALUE){
+							nodo.aristas.add(arista);
+							nodo2.aristas.add(arista);
+						}
+					}
 				}
 			}
 		}

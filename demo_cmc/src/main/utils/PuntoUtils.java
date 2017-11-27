@@ -17,4 +17,8 @@ public class PuntoUtils {
 		}
 		return keys;
 	}
+	
+	public static String toString(Punto punto){
+		return "x"+punto.x+"y"+punto.y;
+	}
 }

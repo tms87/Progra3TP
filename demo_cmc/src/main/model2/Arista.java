@@ -60,9 +60,11 @@ public class Arista {
 	            	int densidad = mapa.getDensidad(tmp);
 	            	if(densidad == 4){
 	            		lista.clear();
+	            		costo = Double.MAX_VALUE;
 	            		break;
 	            	}
 	            	lista.add(tmp);
+	            	costo += mapa.getDensidad(tmp)+1;
 	                if (y == y2)
 	                    break;
 	                y += iy;
