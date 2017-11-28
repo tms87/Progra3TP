@@ -1,7 +1,6 @@
 
 package cmc;
 
-import java.awt.Point;
 import java.awt.Rectangle;
 /**
  * Obtiene la lista de los puntos marcados en la matriz (mapa)
@@ -24,32 +23,31 @@ import java.util.Set;
 import graficos.Area;
 import graficos.Punto;
 import mapa.MapaInfo;
-import model2.Arista;
-import model2.Camino;
-import model2.Grafo;
-import model2.Nodo;
+import model.Arista;
+import model.Camino;
+import model.Grafo;
+import model.Nodo;
 
-public class CmcDemo2 {
+public class CmcTP {
 	private MapaInfo mapa;
 	private CmcImple cmc;
-	private Set<Arista> aristas = new HashSet<>();
 	private Set<Area> areas = new HashSet<>();
 	private Grafo grafo = new Grafo();
 	List<Punto> puntosTest = new ArrayList<>();
 
-	public CmcDemo2(MapaInfo mapa, CmcImple cmc) {
+	public CmcTP(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
 		this.cmc = cmc;
-		mostarColeccionDeAreas();
+//		mostarColeccionDeAreas();
 		procesarAreas();
 		popularGrafo();
-		mostarColeccionDePuntos();
+//		mostarColeccionDePuntos();
 		try {
 			generarAristasIniciales();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("aristas generadas!");
+//		System.out.println("aristas generadas!");
 //		dibujarAristas();
 		obtenerCaminos();
 	}
@@ -64,7 +62,7 @@ public class CmcDemo2 {
 	}
 
 	private Camino getCamino(Punto origen, Punto destino) {
-		System.out.println("inicia getCamino");
+//		System.out.println("inicia getCamino");
 		Nodo nDest = grafo.getNodo(destino);
 		Grafo grafoParcial = new Grafo();
 		Nodo newDest = new Nodo(destino);
@@ -76,7 +74,7 @@ public class CmcDemo2 {
 			Nodo nodo = new Nodo(punto);
 			nodo.aristas.add(arista);
 			nodo.costoMinimoAcumulado = arista.costo;
-			nodo.antecesor = nDest;
+			nodo.antecesor = newDest;
 			nodosActivos.add(nodo);
 			grafoParcial.nodos.add(nodo);
 		}
@@ -87,7 +85,7 @@ public class CmcDemo2 {
 	}
 
 	private void buscarCamino(List<Nodo> nodosActivos, Grafo grafoParcial, Punto destino) {
-		System.out.println("inicia BuscarCamino");
+//		System.out.println("inicia BuscarCamino");
 		List<Nodo> nuevosActivos = new ArrayList<>();
 		for (Nodo nodo : nodosActivos) {
 			Nodo nodoGrafo = grafo.getNodo(nodo.punto);
@@ -106,9 +104,6 @@ public class CmcDemo2 {
 							tmp.antecesor = nodo;
 							tmp.aristas.add(arista);
 							if (!nuevosActivos.contains(tmp) && !nuevosActivos.contains(tmp) && !tmp.punto.igual(destino))
-								nuevosActivos.add(tmp);
-						} else {
-							if (!nodosActivos.contains(tmp) && !nuevosActivos.contains(tmp) && !tmp.punto.igual(destino))
 								nuevosActivos.add(tmp);
 						}
 					} else {
@@ -140,13 +135,6 @@ public class CmcDemo2 {
 					areas.add(new Area(new Punto(newRec.x,newRec.y), new Punto((int)newRec.getMaxX(),(int)newRec.getMaxY()), mapa.getDensidad(centro)));
 				}
 			}
-		}
-	}
-	private void dibujarAristas() {
-		for (Arista arista : aristas) {
-			List<Punto> lista = arista.puntos;
-			System.out.println("arista: "+arista.origen.x+" "+arista.origen.y+" "+arista.destino.x+" "+arista.destino.y+" "+"costo: "+arista.costo);
-			cmc.dibujarCamino(lista);
 		}
 	}
 
@@ -197,59 +185,19 @@ public class CmcDemo2 {
 		return new Arista(puntoA, puntoB, mapa);
 	}
 
-	private void demoObtenerCamino() {
-		Punto a = null, b = null;
-		Iterator<Punto> iter = mapa.getPuntos().iterator();
-		if (iter.hasNext()) {
-			a = iter.next();
-
-			while (iter.hasNext()) {
-				b = iter.next();
-				expandirPuntosContiguos(a, b);
-				a = b;
-			}
-			// expandirPuntosContiguos(a, mapa.getPuntos().get(0));
-			mapa.enviarMensaje("Camino uniendo " + mapa.getPuntos().size() + " puntos");
-		}
-	}
-
-	private void expandirPuntosContiguos(Punto a, Punto b) {
-		List<Punto> listaPuntos = new ArrayList<Punto>();
-		if (a.x < b.x) {
-			for (int x = a.x; x < b.x; x++) {
-				listaPuntos.add(new Punto(x, a.y));
-			}
-		} else {
-			for (int x = a.x; x > b.x; x--) {
-				listaPuntos.add(new Punto(x, a.y));
-			}
-		}
-		if (a.y < b.y) {
-			for (int y = a.y; y < b.y; y++) {
-				listaPuntos.add(new Punto(b.x, y));
-			}
-		} else {
-			for (int y = a.y; y > b.y; y--) {
-				listaPuntos.add(new Punto(b.x, y));
-			}
-		}
-		cmc.dibujarCamino(listaPuntos);
-	}
-
-	/** consulta clase MapaInfo */
-	private void mostarColeccionDeAreas() {
-		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
-		for (Area a : mapa.getAreas()) {
-			System.out.println(a);
-		}
-	}
-
-	/** consulta clase MapaInfo */
-	private void mostarColeccionDePuntos() {
-		for (Punto c : mapa.getPuntos()) {
-			int densidad = mapa.getDensidad(c);
-			System.out.println(c + " D+: " + densidad);
-		}
-	}
-
+//	/** consulta clase MapaInfo */
+//	private void mostarColeccionDeAreas() {
+//		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
+//		for (Area a : mapa.getAreas()) {
+//			System.out.println(a);
+//		}
+//	}
+//
+//	/** consulta clase MapaInfo */
+//	private void mostarColeccionDePuntos() {
+//		for (Punto c : mapa.getPuntos()) {
+//			int densidad = mapa.getDensidad(c);
+//			System.out.println(c + " D+: " + densidad);
+//		}
+//	}
 }

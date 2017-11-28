@@ -17,7 +17,7 @@ public class CmcImple extends CmcSC {
 	public void run(MapaInfo mapa) {
 		this.mapa = mapa;
 		try {
-			new CmcDemo2(mapa, this);
+			new CmcTP(mapa, this);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
