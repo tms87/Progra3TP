@@ -9,12 +9,14 @@ import java.awt.Rectangle;
  * Primero expande eje x, segundo expande el eje y.
  * Reitera la lista expandiendo el siguiente (siempre expandiendo de a pares)
  * El recorrido es secuencial (conforme al orden de marcado de los puntos en el mapa)
- * Invoca la método dibujar en cada iteración.
- * Al finalizar la iteración expande los contiguos entre el último y el primero de la lista.
- * Vuelve a Invocar la método dibujar para cerrar el ciclo.
+ * Invoca la mï¿½todo dibujar en cada iteraciï¿½n.
+ * Al finalizar la iteraciï¿½n expande los contiguos entre el ï¿½ltimo y el primero de la lista.
+ * Vuelve a Invocar la mï¿½todo dibujar para cerrar el ciclo.
  * No contempla las densidades definidas en la matriz (mapa)
  */
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -51,14 +53,74 @@ public class CmcTP {
 //		dibujarAristas();
 		obtenerCaminos();
 	}
+	
+	class ComparadorCostos implements Comparator<Arista> {
+	 	@Override
+		public int compare(Arista o1, Arista o2) {
+	 		return (int) (o1.costo - o2.costo);
+		}
+	}
+	
+	private List<Arista> prim(List<Arista> aristas){
+		List<Arista> aristasResult = new ArrayList<Arista>();
+		List<Punto> vertices = mapa.getPuntos();
+		int cantVer = vertices.size()-1;
+		Punto verTmp = vertices.get(0);
+		vertices.remove(verTmp);
+		while(cantVer > 0){
+			for(int i=0; i< aristas.size(); i++){
+				if (verTmp == aristas.get(i).origen){
+					aristasResult.add(aristas.get(i));
+					break;
+				}
+			}
+			verTmp = vertices.get(0);
+			vertices.remove(verTmp);
+			cantVer--;
+		}
+		
+		System.out.println(aristasResult.size());
+		
+		return aristasResult;
+	}
 
 	private void obtenerCaminos() {
+		List<Arista> aristasResult = new ArrayList<>();
 		for (int i = 0; i < mapa.getPuntos().size(); i++) {
 			for (int j = i+1; j < mapa.getPuntos().size(); j++) {
 				Camino camino = getCamino(mapa.getPuntos().get(i),mapa.getPuntos().get(j));
-				camino.dibujar(cmc);
+				if (camino != null){
+					List<Arista> aristas = new ArrayList<>();
+					for(int k=0; k< camino.getAristas().size(); k++)
+						aristas.add(camino.getAristas().get(k));
+					Punto origen = mapa.getPuntos().get(i);
+					Punto destino = mapa.getPuntos().get(j);
+					Arista aristaResult = new Arista(origen,destino);
+					for(int k=0; k< aristas.size(); k++){
+						for(int l=0; l< aristas.get(k).getPuntos().size(); l++){
+							aristaResult.addPunto(aristas.get(k).getPuntos().get(l));
+							
+						}
+						aristaResult.sumarCosto(aristas.get(k).getCosto());
+					}
+					aristasResult.add(aristaResult);
+				}
+				
 			}
 		}
+		
+		Collections.sort(aristasResult, new ComparadorCostos());
+		
+		for(int i=0; i < aristasResult.size(); i++)
+			System.out.println(aristasResult.get(i).costo);
+		
+		List<Arista> caminoDef = this.prim(aristasResult);
+		
+		for (Arista arista : caminoDef) {
+			cmc.dibujarCamino(arista.puntos);
+		}
+		
+		
 	}
 
 	private Camino getCamino(Punto origen, Punto destino) {

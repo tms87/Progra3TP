@@ -26,6 +26,7 @@ public class Grafo {
 	}
 	
 	public Camino generarCamino(Nodo nodo){
+		if (nodo != null){
 		Nodo tmp = nodo;
 		Camino camino = new Camino();
 		camino.costoAcumulado = nodo.costoMinimoAcumulado;
@@ -39,5 +40,7 @@ public class Grafo {
 			}
 		}
 		return camino;
+		}
+		return null;
 	}
 }

@@ -19,6 +19,12 @@ public class Arista {
 		this.puntos = setPuntos(origen.x, origen.y, destino.x, destino.y, mapa);
 	}
 	
+	public Arista(Punto origen, Punto destino) {
+		this.origen = origen;
+		this.destino = destino;
+		this.puntos = new ArrayList<Punto>();
+	}
+	
 	 public List<Punto> setPuntos(int x1, int y1, int x2, int y2, MapaInfo mapa) {
 	        int d = 0;
 	 
@@ -77,4 +83,22 @@ public class Arista {
 	        }
 			return lista;
 	    }
+
+	public Double getCosto() {
+		return costo;
+	}
+
+	public void sumarCosto(Double costo) {
+		this.costo = this.costo + costo;
+	}
+	
+	public void addPunto(Punto punto){
+		this.puntos.add(punto);
+	}
+
+	public List<Punto> getPuntos() {
+		return puntos;
+	}
+	 
+	 
 }
