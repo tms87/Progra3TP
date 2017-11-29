@@ -38,16 +38,15 @@ public class CmcTP {
 	public CmcTP(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
 		this.cmc = cmc;
-//		mostarColeccionDeAreas();
+		mostarColeccionDeAreas();
+		mostarColeccionDePuntos();
 		procesarAreas();
 		popularGrafo();
-//		mostarColeccionDePuntos();
 		try {
 			generarAristasIniciales();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		System.out.println("aristas generadas!");
 //		dibujarAristas();
 		obtenerCaminos();
 	}
@@ -147,21 +146,71 @@ public class CmcTP {
 		while(iterador.hasNext()) {
 			Area area = iterador.next();
 			Rectangle rec =area.getRectangle();
-			int maxY = (int) ((rec.getMaxY()+1 > 600)?600:rec.getMaxY()+1);
-			int maxX = (int) ((rec.getMaxX()+1 > 800)?800:rec.getMaxX()+1);
-			int minX = (rec.x-1 < 0)?0:rec.x-1;
-			int minY = (rec.y-1 < 0)?0:rec.y-1;
-			grafo.nodos.add(new Nodo(new Punto(minX,minY)));
-			System.out.println("x: "+minX+" y: "+minY);
-			grafo.nodos.add(new Nodo(new Punto(minX,maxY)));
-			System.out.println("x: "+minX+" y: "+maxY);
-			grafo.nodos.add(new Nodo(new Punto(maxX,minY)));
-			System.out.println("x: "+maxX+" y: "+minY);
-			grafo.nodos.add(new Nodo(new Punto(maxX,maxY)));
-			System.out.println("x: "+maxX+" y: "+maxY);
+			agregarNodo(rec.x,rec.y,true,true);
+			agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
+			agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
+			agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
 		}
 	}
 	
+	private void agregarNodo(int x, int y, boolean upX, boolean upY) {
+		int nodoX, nodoY;
+		int color = mapa.getDensidad(x,y);
+//		if(upX) {
+//			if (mapa.getDensidad(x,y) >= mapa.getDensidad(x-1,y))
+//				nodoX = x-1;
+//			else
+//				nodoX = x;
+//		} else {
+//			if (mapa.getDensidad(x,y) >= mapa.getDensidad(x+1,y))
+//				nodoX = x+1;
+//			else
+//				nodoX = x;
+//		}
+//		if(upY){
+//			if (mapa.getDensidad(x,y) >= mapa.getDensidad(x,y-1))
+//				nodoY = y-1;
+//			else
+//				nodoY = y;
+//		} else {
+//			if (mapa.getDensidad(x,y) >= mapa.getDensidad(x,y+1))
+//				nodoY = y+1;
+//			else
+//				nodoY = y;
+//		}
+		if(upX) {
+				nodoX = x-1;
+		} else {
+				nodoX = x+1;
+		}
+		if(upY){
+				nodoY = y-1;
+		} else {
+				nodoY = y+1;
+		}
+		if (!(mapa.getDensidad(x+1,y) == color && mapa.getDensidad(x-1,y) == color
+				&& mapa.getDensidad(x,y+1) == color && mapa.getDensidad(x,y-1) == color
+				&& mapa.getDensidad(x+1,y+1) == color && mapa.getDensidad(x-1,y-1) == color
+				&& mapa.getDensidad(x-1,y+1) == color && mapa.getDensidad(x+1,y-1) == color))
+			grafo.nodos.add(new Nodo(new Punto(x,y)));
+//			grafo.nodos.add(new Nodo(new Punto(nodoX,nodoY)));
+		if (!(mapa.getDensidad(nodoX+1,nodoY) == color && mapa.getDensidad(nodoX-1,nodoY) == color
+				&& mapa.getDensidad(nodoX,nodoY+1) == color && mapa.getDensidad(nodoX,nodoY-1) == color
+				&& mapa.getDensidad(nodoX+1,nodoY+1) == color && mapa.getDensidad(nodoX-1,nodoY-1) == color
+				&& mapa.getDensidad(nodoX-1,nodoY+1) == color && mapa.getDensidad(nodoX+1,nodoY-1) == color))
+			grafo.nodos.add(new Nodo(new Punto(nodoX,nodoY)));
+	}
+
+	private boolean validarColor(int x, int y) {
+		int color = mapa.getDensidad(x,y);
+		if (mapa.getDensidad(x+1,y) == color && mapa.getDensidad(x-1,y) == color
+				&& mapa.getDensidad(x,y+1) == color && mapa.getDensidad(x,y-1) == color
+				&& mapa.getDensidad(x+1,y+1) == color && mapa.getDensidad(x-1,y-1) == color
+				&& mapa.getDensidad(x-1,y+1) == color && mapa.getDensidad(x+1,y-1) == color)
+			return false;
+		return true;
+	}
+
 	private void generarAristasIniciales() throws Exception {
 		Iterator<Nodo> it = grafo.nodos.iterator();
 		while (it.hasNext()) {
@@ -181,23 +230,37 @@ public class CmcTP {
 			}
 		}
 	}
+	
 	private Arista generarArista(Punto puntoA, Punto puntoB) {
 		return new Arista(puntoA, puntoB, mapa);
 	}
+	
+	private void dibujarAristas() {
+		Iterator<Nodo> it = grafo.nodos.iterator();
+		while (it.hasNext()) {
+			Nodo nodo = (Nodo) it.next();
+			for (Arista arista : nodo.aristas) {
+				List<Punto> lista = arista.puntos;
+				System.out.println("arista: "+arista.origen.x+" "+arista.origen.y+" "+arista.destino.x+" "+arista.destino.y+" "+"costo: "+arista.costo);
+				cmc.dibujarCamino(lista);
+			}
+		}
+	}
 
-//	/** consulta clase MapaInfo */
-//	private void mostarColeccionDeAreas() {
-//		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
-//		for (Area a : mapa.getAreas()) {
-//			System.out.println(a);
-//		}
-//	}
-//
-//	/** consulta clase MapaInfo */
-//	private void mostarColeccionDePuntos() {
-//		for (Punto c : mapa.getPuntos()) {
-//			int densidad = mapa.getDensidad(c);
-//			System.out.println(c + " D+: " + densidad);
-//		}
-//	}
+	/** consulta clase MapaInfo */
+	private void mostarColeccionDeAreas() {
+		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
+		for (Area a : mapa.getAreas()) {
+			System.out.println(a);
+		}
+	}
+
+	/** consulta clase MapaInfo */
+	private void mostarColeccionDePuntos() {
+		for (Punto c : mapa.getPuntos()) {
+			int densidad = mapa.getDensidad(c);
+			System.out.println(c + " D+: " + densidad);
+		}
+	}
+	
 }
