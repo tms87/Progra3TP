@@ -15,8 +15,10 @@ import java.awt.Rectangle;
  * No contempla las densidades definidas en la matriz (mapa)
  */
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -38,31 +40,110 @@ public class CmcTP {
 	public CmcTP(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
 		this.cmc = cmc;
-//		mostarColeccionDeAreas();
+		mostarColeccionDeAreas();
+		mostarColeccionDePuntos();
 		procesarAreas();
 		popularGrafo();
-//		mostarColeccionDePuntos();
 		try {
 			generarAristasIniciales();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		System.out.println("aristas generadas!");
 //		dibujarAristas();
 		obtenerCaminos();
 	}
 
 	private void obtenerCaminos() {
+		LinkedList<Camino> caminos = new LinkedList<>();
 		for (int i = 0; i < mapa.getPuntos().size(); i++) {
 			for (int j = i+1; j < mapa.getPuntos().size(); j++) {
 				Camino camino = getCamino(mapa.getPuntos().get(i),mapa.getPuntos().get(j));
-				camino.dibujar(cmc);
+				caminos.add(camino);
 			}
+		}
+		Collections.sort(caminos);
+		List<Camino> solucion =kruskal(caminos);
+		dibujarCaminos(solucion);
+	}
+
+	private void dibujarCaminos(List<Camino> solucion) {
+		for (Camino camino : solucion) {
+			dibujarAristas(camino.aristas);
 		}
 	}
 
+	private void dibujarAristas(List<Arista> aristas) {
+		for (Arista arista : aristas) {
+			cmc.dibujarCamino(arista.puntos);
+		}
+		
+	}
+
+	private List<Camino> kruskal(LinkedList<Camino> caminos){
+		System.out.println("empieza kruskal");
+		List<Punto> vertices = mapa.getPuntos();
+		List<Camino> solucion = new ArrayList<>();
+		List<List<Punto>> conjuntos = new ArrayList<>();
+		aristas: while (!vertices.isEmpty()) {
+			Camino camino =caminos.getFirst();
+			
+			for (List<Punto> conjunto : conjuntos) {
+				System.out.println("reviso camino");
+				if (conjunto.contains(camino.origen)){
+					if (conjunto.contains(camino.destino)){
+						//descarto el camino
+						caminos.removeFirst();
+						continue aristas;
+					} else {
+						//solo tiene el origen
+						for (List<Punto> tmp : conjuntos) {
+							if (tmp.contains(camino.destino)){
+								conjuntos.remove(tmp);
+								conjunto.addAll(tmp);
+								solucion.add(camino);
+								continue aristas;
+							}
+						}
+						//el destino no esta en ningun otro conjunto
+						solucion.add(camino);
+						conjunto.add(camino.destino);
+						vertices.remove(camino.destino);
+						caminos.removeFirst();
+						continue aristas;
+					}
+				} else {
+					if (conjunto.contains(camino.destino)){
+						//solo tiene el destino
+						for (List<Punto> tmp : conjuntos) {
+							if (tmp.contains(camino.origen)){
+								conjuntos.remove(tmp);
+								conjunto.addAll(tmp);
+								solucion.add(camino);
+								continue aristas;
+							}
+						}
+						solucion.add(camino);
+						conjunto.add(camino.origen);
+						vertices.remove(camino.origen);
+						caminos.removeFirst();
+						continue aristas;
+					} // else { no tiene ninguno }
+				}
+			}
+			//no encontre el vertise en los conjuntos
+			solucion.add(camino);
+			List<Punto> nuevoConjunto = new ArrayList<>();
+			nuevoConjunto.add(camino.origen);
+			vertices.remove(camino.origen);
+			nuevoConjunto.add(camino.destino);
+			vertices.remove(camino.destino);
+			conjuntos.add(nuevoConjunto);
+			caminos.removeFirst();
+		}
+		return solucion;
+	}
+	
 	private Camino getCamino(Punto origen, Punto destino) {
-//		System.out.println("inicia getCamino");
 		Nodo nDest = grafo.getNodo(destino);
 		Grafo grafoParcial = new Grafo();
 		Nodo newDest = new Nodo(destino);
@@ -78,14 +159,12 @@ public class CmcTP {
 			nodosActivos.add(nodo);
 			grafoParcial.nodos.add(nodo);
 		}
-		System.out.println("primer paso listo");
 		buscarCamino(nodosActivos,grafoParcial,origen);
 		Camino camino = grafoParcial.generarCamino(grafoParcial.getNodo(origen));
 		return camino;
 	}
 
 	private void buscarCamino(List<Nodo> nodosActivos, Grafo grafoParcial, Punto destino) {
-//		System.out.println("inicia BuscarCamino");
 		List<Nodo> nuevosActivos = new ArrayList<>();
 		for (Nodo nodo : nodosActivos) {
 			Nodo nodoGrafo = grafo.getNodo(nodo.punto);
@@ -147,21 +226,38 @@ public class CmcTP {
 		while(iterador.hasNext()) {
 			Area area = iterador.next();
 			Rectangle rec =area.getRectangle();
-			int maxY = (int) ((rec.getMaxY()+1 > 600)?600:rec.getMaxY()+1);
-			int maxX = (int) ((rec.getMaxX()+1 > 800)?800:rec.getMaxX()+1);
-			int minX = (rec.x-1 < 0)?0:rec.x-1;
-			int minY = (rec.y-1 < 0)?0:rec.y-1;
-			grafo.nodos.add(new Nodo(new Punto(minX,minY)));
-			System.out.println("x: "+minX+" y: "+minY);
-			grafo.nodos.add(new Nodo(new Punto(minX,maxY)));
-			System.out.println("x: "+minX+" y: "+maxY);
-			grafo.nodos.add(new Nodo(new Punto(maxX,minY)));
-			System.out.println("x: "+maxX+" y: "+minY);
-			grafo.nodos.add(new Nodo(new Punto(maxX,maxY)));
-			System.out.println("x: "+maxX+" y: "+maxY);
+			agregarNodo(rec.x,rec.y,true,true);
+			agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
+			agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
+			agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
 		}
 	}
 	
+	private void agregarNodo(int x, int y, boolean upX, boolean upY) {
+		int nodoX, nodoY;
+		int color = mapa.getDensidad(x,y);
+		if(upX) {
+				nodoX = x-1;
+		} else {
+				nodoX = x+1;
+		}
+		if(upY){
+				nodoY = y-1;
+		} else {
+				nodoY = y+1;
+		}
+		if (!(mapa.getDensidad(x+1,y) == color && mapa.getDensidad(x-1,y) == color
+				&& mapa.getDensidad(x,y+1) == color && mapa.getDensidad(x,y-1) == color
+				&& mapa.getDensidad(x+1,y+1) == color && mapa.getDensidad(x-1,y-1) == color
+				&& mapa.getDensidad(x-1,y+1) == color && mapa.getDensidad(x+1,y-1) == color))
+			grafo.nodos.add(new Nodo(new Punto(x,y)));
+		if (!(mapa.getDensidad(nodoX+1,nodoY) == color && mapa.getDensidad(nodoX-1,nodoY) == color
+				&& mapa.getDensidad(nodoX,nodoY+1) == color && mapa.getDensidad(nodoX,nodoY-1) == color
+				&& mapa.getDensidad(nodoX+1,nodoY+1) == color && mapa.getDensidad(nodoX-1,nodoY-1) == color
+				&& mapa.getDensidad(nodoX-1,nodoY+1) == color && mapa.getDensidad(nodoX+1,nodoY-1) == color))
+			grafo.nodos.add(new Nodo(new Punto(nodoX,nodoY)));
+	}
+
 	private void generarAristasIniciales() throws Exception {
 		Iterator<Nodo> it = grafo.nodos.iterator();
 		while (it.hasNext()) {
@@ -181,23 +277,37 @@ public class CmcTP {
 			}
 		}
 	}
+	
 	private Arista generarArista(Punto puntoA, Punto puntoB) {
 		return new Arista(puntoA, puntoB, mapa);
 	}
+	
+	private void dibujarAristas() {
+		Iterator<Nodo> it = grafo.nodos.iterator();
+		while (it.hasNext()) {
+			Nodo nodo = (Nodo) it.next();
+			for (Arista arista : nodo.aristas) {
+				List<Punto> lista = arista.puntos;
+				System.out.println("arista: "+arista.origen.x+" "+arista.origen.y+" "+arista.destino.x+" "+arista.destino.y+" "+"costo: "+arista.costo);
+				cmc.dibujarCamino(lista);
+			}
+		}
+	}
 
-//	/** consulta clase MapaInfo */
-//	private void mostarColeccionDeAreas() {
-//		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
-//		for (Area a : mapa.getAreas()) {
-//			System.out.println(a);
-//		}
-//	}
-//
-//	/** consulta clase MapaInfo */
-//	private void mostarColeccionDePuntos() {
-//		for (Punto c : mapa.getPuntos()) {
-//			int densidad = mapa.getDensidad(c);
-//			System.out.println(c + " D+: " + densidad);
-//		}
-//	}
+	/** consulta clase MapaInfo */
+	private void mostarColeccionDeAreas() {
+		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
+		for (Area a : mapa.getAreas()) {
+			System.out.println(a);
+		}
+	}
+
+	/** consulta clase MapaInfo */
+	private void mostarColeccionDePuntos() {
+		for (Punto c : mapa.getPuntos()) {
+			int densidad = mapa.getDensidad(c);
+			System.out.println(c + " D+: " + densidad);
+		}
+	}
+	
 }

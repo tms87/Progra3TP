@@ -29,6 +29,7 @@ public class Grafo {
 		Nodo tmp = nodo;
 		Camino camino = new Camino();
 		camino.costoAcumulado = nodo.costoMinimoAcumulado;
+		camino.origen = nodo.punto;
 		while(tmp.antecesor != null){
 			for (Arista arista : tmp.aristas) {
 				if (arista.origen.igual(tmp.antecesor.punto) || arista.destino.igual(tmp.antecesor.punto)){
@@ -38,6 +39,7 @@ public class Grafo {
 				}
 			}
 		}
+		camino.destino = tmp.punto;
 		return camino;
 	}
 }
