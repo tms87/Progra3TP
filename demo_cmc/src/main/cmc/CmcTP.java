@@ -31,6 +31,7 @@ import model.Grafo;
 import model.Nodo;
 
 public class CmcTP {
+	private static final int PRECISION = 10;
 	private MapaInfo mapa;
 	private CmcImple cmc;
 	private Set<Area> areas = new HashSet<>();
@@ -40,29 +41,28 @@ public class CmcTP {
 	public CmcTP(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
 		this.cmc = cmc;
-		mostarColeccionDeAreas();
-		mostarColeccionDePuntos();
 		procesarAreas();
+		System.out.println("Precision: " + PRECISION);
 		popularGrafo();
 		try {
 			generarAristasIniciales();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-//		dibujarAristas();
+		// dibujarAristas();
 		obtenerCaminos();
 	}
 
 	private void obtenerCaminos() {
 		LinkedList<Camino> caminos = new LinkedList<>();
 		for (int i = 0; i < mapa.getPuntos().size(); i++) {
-			for (int j = i+1; j < mapa.getPuntos().size(); j++) {
-				Camino camino = getCamino(mapa.getPuntos().get(i),mapa.getPuntos().get(j));
+			for (int j = i + 1; j < mapa.getPuntos().size(); j++) {
+				Camino camino = getCamino(mapa.getPuntos().get(i), mapa.getPuntos().get(j));
 				caminos.add(camino);
 			}
 		}
 		Collections.sort(caminos);
-		List<Camino> solucion =kruskal(caminos);
+		List<Camino> solucion = recorrido(caminos);
 		dibujarCaminos(solucion);
 	}
 
@@ -76,73 +76,82 @@ public class CmcTP {
 		for (Arista arista : aristas) {
 			cmc.dibujarCamino(arista.puntos);
 		}
-		
 	}
 
-	private List<Camino> kruskal(LinkedList<Camino> caminos){
+	private List<Camino> recorrido(LinkedList<Camino> caminos) {
+		List<Camino> recorrido = new ArrayList<>();
+		List<Punto> vertices = mapa.getPuntos();
+		Punto punto = vertices.get(0);
+		while (!(vertices.size() == 1)) {
+			// while(!vertices.isEmpty()){ //Para cerrar el camino
+			for (Camino camino : caminos) {
+				if (camino.origen == punto) {
+					recorrido.add(camino);
+					vertices.remove(punto);
+					caminos.remove(camino);
+					punto = camino.destino;
+					break;
+				} else if (camino.destino == punto) {
+					recorrido.add(camino);
+					vertices.remove(punto);
+					caminos.remove(camino);
+					punto = camino.origen;
+					break;
+				}
+			}
+		}
+		return recorrido;
+	}
+
+	@SuppressWarnings("unused")
+	private List<Camino> kruskal(LinkedList<Camino> caminos) {
 		System.out.println("empieza kruskal");
 		List<Punto> vertices = mapa.getPuntos();
-		List<Camino> solucion = new ArrayList<>();
 		List<List<Punto>> conjuntos = new ArrayList<>();
-		aristas: while (!vertices.isEmpty()) {
-			Camino camino =caminos.getFirst();
-			
+		for (Punto punto : vertices) {
+			List<Punto> list = new ArrayList<>();
+			list.add(punto);
+			conjuntos.add(list);
+		}
+		List<Camino> solucion = new ArrayList<>();
+		aristas: while (!(conjuntos.size() == 1)) {
+			Camino camino = caminos.getFirst();
 			for (List<Punto> conjunto : conjuntos) {
 				System.out.println("reviso camino");
-				if (conjunto.contains(camino.origen)){
-					if (conjunto.contains(camino.destino)){
-						//descarto el camino
+				if (conjunto.contains(camino.origen)) {
+					if (conjunto.contains(camino.destino)) {
+						// descarto el camino
 						caminos.removeFirst();
 						continue aristas;
 					} else {
-						//solo tiene el origen
+						// solo tiene el origen
 						for (List<Punto> tmp : conjuntos) {
-							if (tmp.contains(camino.destino)){
+							if (tmp.contains(camino.destino)) {
 								conjuntos.remove(tmp);
 								conjunto.addAll(tmp);
 								solucion.add(camino);
 								continue aristas;
 							}
 						}
-						//el destino no esta en ningun otro conjunto
-						solucion.add(camino);
-						conjunto.add(camino.destino);
-						vertices.remove(camino.destino);
-						caminos.removeFirst();
-						continue aristas;
 					}
 				} else {
-					if (conjunto.contains(camino.destino)){
-						//solo tiene el destino
+					if (conjunto.contains(camino.destino)) {
+						// solo tiene el destino
 						for (List<Punto> tmp : conjuntos) {
-							if (tmp.contains(camino.origen)){
+							if (tmp.contains(camino.origen)) {
 								conjuntos.remove(tmp);
 								conjunto.addAll(tmp);
 								solucion.add(camino);
 								continue aristas;
 							}
 						}
-						solucion.add(camino);
-						conjunto.add(camino.origen);
-						vertices.remove(camino.origen);
-						caminos.removeFirst();
-						continue aristas;
-					} // else { no tiene ninguno }
+					}
 				}
 			}
-			//no encontre el vertise en los conjuntos
-			solucion.add(camino);
-			List<Punto> nuevoConjunto = new ArrayList<>();
-			nuevoConjunto.add(camino.origen);
-			vertices.remove(camino.origen);
-			nuevoConjunto.add(camino.destino);
-			vertices.remove(camino.destino);
-			conjuntos.add(nuevoConjunto);
-			caminos.removeFirst();
 		}
 		return solucion;
 	}
-	
+
 	private Camino getCamino(Punto origen, Punto destino) {
 		Nodo nDest = grafo.getNodo(destino);
 		Grafo grafoParcial = new Grafo();
@@ -151,7 +160,7 @@ public class CmcTP {
 		grafoParcial.nodos.add(newDest);
 		List<Nodo> nodosActivos = new ArrayList<>();
 		for (Arista arista : nDest.aristas) {
-			Punto punto = (arista.origen != destino)?arista.origen:arista.destino;
+			Punto punto = (arista.origen != destino) ? arista.origen : arista.destino;
 			Nodo nodo = new Nodo(punto);
 			nodo.aristas.add(arista);
 			nodo.costoMinimoAcumulado = arista.costo;
@@ -159,7 +168,7 @@ public class CmcTP {
 			nodosActivos.add(nodo);
 			grafoParcial.nodos.add(nodo);
 		}
-		buscarCamino(nodosActivos,grafoParcial,origen);
+		buscarCamino(nodosActivos, grafoParcial, origen);
 		Camino camino = grafoParcial.generarCamino(grafoParcial.getNodo(origen));
 		return camino;
 	}
@@ -169,20 +178,21 @@ public class CmcTP {
 		for (Nodo nodo : nodosActivos) {
 			Nodo nodoGrafo = grafo.getNodo(nodo.punto);
 			for (Arista arista : nodoGrafo.aristas) {
-				Punto punto = (arista.origen != nodo.punto)?arista.origen:arista.destino;
-				if(punto.igual(nodo.antecesor.punto)){
+				Punto punto = (arista.origen != nodo.punto) ? arista.origen : arista.destino;
+				if (punto.igual(nodo.antecesor.punto)) {
 					continue;
 				}
-				double costo = nodo.costoMinimoAcumulado+arista.costo;
-				if (costo < grafoParcial.costoSolucion){
+				double costo = nodo.costoMinimoAcumulado + arista.costo;
+				if (costo < grafoParcial.costoSolucion) {
 					Nodo tmp = grafoParcial.getNodo(punto);
-					if (tmp != null){
-						if (tmp.costoMinimoAcumulado > costo){
+					if (tmp != null) {
+						if (tmp.costoMinimoAcumulado > costo) {
 							tmp.costoMinimoAcumulado = costo;
 							tmp.removerArista(tmp.antecesor.punto);
 							tmp.antecesor = nodo;
 							tmp.aristas.add(arista);
-							if (!nuevosActivos.contains(tmp) && !nuevosActivos.contains(tmp) && !tmp.punto.igual(destino))
+							if (!nuevosActivos.contains(tmp) && !nuevosActivos.contains(tmp)
+									&& !tmp.punto.igual(destino))
 								nuevosActivos.add(tmp);
 						}
 					} else {
@@ -191,7 +201,7 @@ public class CmcTP {
 						tmp.costoMinimoAcumulado = costo;
 						tmp.antecesor = nodo;
 						grafoParcial.nodos.add(tmp);
-						if (!tmp.punto.igual(destino)){
+						if (!tmp.punto.igual(destino)) {
 							nuevosActivos.add(tmp);
 						}
 					}
@@ -199,19 +209,20 @@ public class CmcTP {
 			}
 		}
 		if (!nuevosActivos.isEmpty())
-			buscarCamino(nuevosActivos,grafoParcial,destino);
+			buscarCamino(nuevosActivos, grafoParcial, destino);
 	}
 
 	private void procesarAreas() {
 		areas.addAll(mapa.getAreas());
 		for (int i = 0; i < mapa.getAreas().size(); i++) {
-			for (int j = i+1; j < mapa.getAreas().size(); j++) {
+			for (int j = i + 1; j < mapa.getAreas().size(); j++) {
 				Rectangle recI = mapa.getAreas().get(i).getRectangle();
 				Rectangle recJ = mapa.getAreas().get(j).getRectangle();
 				Rectangle newRec = recI.intersection(recJ);
-				if (!newRec.isEmpty()){
-					Punto centro = new Punto((int)newRec.getCenterX(),(int)newRec.getCenterY());
-					areas.add(new Area(new Punto(newRec.x,newRec.y), new Punto((int)newRec.getMaxX(),(int)newRec.getMaxY()), mapa.getDensidad(centro)));
+				if (!newRec.isEmpty()) {
+					Punto centro = new Punto((int) newRec.getCenterX(), (int) newRec.getCenterY());
+					areas.add(new Area(new Punto(newRec.x, newRec.y),
+							new Punto((int) newRec.getMaxX(), (int) newRec.getMaxY()), mapa.getDensidad(centro)));
 				}
 			}
 		}
@@ -223,39 +234,71 @@ public class CmcTP {
 			grafo.nodos.add(nodo);
 		}
 		Iterator<Area> iterador = areas.iterator();
-		while(iterador.hasNext()) {
+		while (iterador.hasNext()) {
 			Area area = iterador.next();
-			Rectangle rec =area.getRectangle();
-			agregarNodo(rec.x,rec.y,true,true);
-			agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
-			agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
-			agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
+			Rectangle rec = area.getRectangle();
+			for (int i = 0; i < rec.width - 1; i = i + PRECISION) {
+				agregarNodo(rec.x + i, rec.y, true, true);
+			}
+			for (int i = 0; i < rec.height - 1; i = i + PRECISION) {
+				agregarNodo(rec.x, (int) rec.getMaxY() - 1 - i, true, false);
+			}
+			for (int i = 0; i < rec.width - 1; i = i + PRECISION) {
+				agregarNodo((int) rec.getMaxX() - 1 - i, (int) rec.getMaxY() - 1, false, false);
+			}
+			for (int i = 0; i < rec.height - 1; i = i + PRECISION) {
+				agregarNodo((int) rec.getMaxX() - 1, rec.y + i, false, true);
+			}
+			/** Para agilizar el algoritmo **/
+			// agregarNodo(rec.x,rec.y,true,true);
+			// agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
+			// agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
+			// agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
 		}
 	}
-	
+
 	private void agregarNodo(int x, int y, boolean upX, boolean upY) {
-		int nodoX, nodoY;
-		int color = mapa.getDensidad(x,y);
-		if(upX) {
-				nodoX = x-1;
+		int nodoX = 0, nodoY = 0;
+		int color = mapa.getDensidad(x, y);
+		boolean xBorde0 = false, xBorde800 = false, yBorde0 = false, yBorde600 = false;
+		if (upX) {
+			if (x > 0)
+				nodoX = x - 1;
+			else
+				xBorde0 = true;
 		} else {
-				nodoX = x+1;
+			if (x < 800)
+				nodoX = x + 1;
+			else
+				xBorde800 = true;
 		}
-		if(upY){
-				nodoY = y-1;
+		if (upY) {
+			if (y > 0)
+				nodoY = y - 1;
+			else
+				yBorde0 = true;
 		} else {
-				nodoY = y+1;
+			if (y < 600)
+				nodoY = y + 1;
+			else
+				yBorde600 = true;
 		}
-		if (!(mapa.getDensidad(x+1,y) == color && mapa.getDensidad(x-1,y) == color
-				&& mapa.getDensidad(x,y+1) == color && mapa.getDensidad(x,y-1) == color
-				&& mapa.getDensidad(x+1,y+1) == color && mapa.getDensidad(x-1,y-1) == color
-				&& mapa.getDensidad(x-1,y+1) == color && mapa.getDensidad(x+1,y-1) == color))
-			grafo.nodos.add(new Nodo(new Punto(x,y)));
-		if (!(mapa.getDensidad(nodoX+1,nodoY) == color && mapa.getDensidad(nodoX-1,nodoY) == color
-				&& mapa.getDensidad(nodoX,nodoY+1) == color && mapa.getDensidad(nodoX,nodoY-1) == color
-				&& mapa.getDensidad(nodoX+1,nodoY+1) == color && mapa.getDensidad(nodoX-1,nodoY-1) == color
-				&& mapa.getDensidad(nodoX-1,nodoY+1) == color && mapa.getDensidad(nodoX+1,nodoY-1) == color))
-			grafo.nodos.add(new Nodo(new Punto(nodoX,nodoY)));
+		if (!((!xBorde800 && mapa.getDensidad(x + 1, y) == color) && (!xBorde0 && mapa.getDensidad(x - 1, y) == color)
+				&& (!yBorde600 && mapa.getDensidad(x, y + 1) == color)
+				&& (!yBorde0 && mapa.getDensidad(x, y - 1) == color)
+				&& (!xBorde800 && !yBorde600 && mapa.getDensidad(x + 1, y + 1) == color)
+				&& (!xBorde0 && !yBorde0 && mapa.getDensidad(x - 1, y - 1) == color)
+				&& (!xBorde0 && !yBorde600 && mapa.getDensidad(x - 1, y + 1) == color)
+				&& (!xBorde800 && !yBorde0 && mapa.getDensidad(x + 1, y - 1) == color)))
+			grafo.nodos.add(new Nodo(new Punto(x, y)));
+		if (nodoX != 0 && nodoY != 0)
+			if (!(mapa.getDensidad(nodoX + 1, nodoY) == color && mapa.getDensidad(nodoX - 1, nodoY) == color
+					&& mapa.getDensidad(nodoX, nodoY + 1) == color && mapa.getDensidad(nodoX, nodoY - 1) == color
+					&& mapa.getDensidad(nodoX + 1, nodoY + 1) == color
+					&& mapa.getDensidad(nodoX - 1, nodoY - 1) == color
+					&& mapa.getDensidad(nodoX - 1, nodoY + 1) == color
+					&& mapa.getDensidad(nodoX + 1, nodoY - 1) == color))
+				grafo.nodos.add(new Nodo(new Punto(nodoX, nodoY)));
 	}
 
 	private void generarAristasIniciales() throws Exception {
@@ -265,10 +308,10 @@ public class CmcTP {
 			Iterator<Nodo> it2 = grafo.nodos.iterator();
 			while (it2.hasNext()) {
 				Nodo nodo2 = (Nodo) it2.next();
-				if(!nodo.equals(nodo2)){
-					if (!nodo.existeArista(nodo.punto, nodo2.punto)){
+				if (!nodo.equals(nodo2)) {
+					if (!nodo.existeArista(nodo.punto, nodo2.punto)) {
 						Arista arista = generarArista(nodo.punto, nodo2.punto);
-						if (arista != null && arista.costo < Double.MAX_VALUE){
+						if (arista != null && arista.costo < Double.MAX_VALUE) {
 							nodo.aristas.add(arista);
 							nodo2.aristas.add(arista);
 						}
@@ -277,24 +320,28 @@ public class CmcTP {
 			}
 		}
 	}
-	
+
 	private Arista generarArista(Punto puntoA, Punto puntoB) {
 		return new Arista(puntoA, puntoB, mapa);
 	}
-	
+
+	// Test
+	@SuppressWarnings("unused")
 	private void dibujarAristas() {
 		Iterator<Nodo> it = grafo.nodos.iterator();
 		while (it.hasNext()) {
 			Nodo nodo = (Nodo) it.next();
 			for (Arista arista : nodo.aristas) {
 				List<Punto> lista = arista.puntos;
-				System.out.println("arista: "+arista.origen.x+" "+arista.origen.y+" "+arista.destino.x+" "+arista.destino.y+" "+"costo: "+arista.costo);
+				System.out.println("arista: " + arista.origen.x + " " + arista.origen.y + " " + arista.destino.x + " "
+						+ arista.destino.y + " " + "costo: " + arista.costo);
 				cmc.dibujarCamino(lista);
 			}
 		}
 	}
 
 	/** consulta clase MapaInfo */
+	@SuppressWarnings("unused")
 	private void mostarColeccionDeAreas() {
 		System.out.println("Mapa: " + MapaInfo.LARGO + " x " + MapaInfo.ALTO);
 		for (Area a : mapa.getAreas()) {
@@ -303,11 +350,12 @@ public class CmcTP {
 	}
 
 	/** consulta clase MapaInfo */
+	@SuppressWarnings("unused")
 	private void mostarColeccionDePuntos() {
 		for (Punto c : mapa.getPuntos()) {
 			int densidad = mapa.getDensidad(c);
 			System.out.println(c + " D+: " + densidad);
 		}
 	}
-	
+
 }
