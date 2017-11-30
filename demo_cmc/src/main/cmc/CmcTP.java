@@ -31,17 +31,19 @@ import model.Grafo;
 import model.Nodo;
 
 public class CmcTP {
-	private static final int PRECISION = 10;
+	private static final int PRECISION = 30;
 	private MapaInfo mapa;
 	private CmcImple cmc;
 	private Set<Area> areas = new HashSet<>();
 	private Grafo grafo = new Grafo();
 	List<Punto> puntosTest = new ArrayList<>();
-
+	List<Punto> vertices = new ArrayList<>();
+	
 	public CmcTP(MapaInfo mapa, CmcImple cmc) {
 		this.mapa = mapa;
 		this.cmc = cmc;
 		procesarAreas();
+		vertices.addAll(mapa.getPuntos());
 		System.out.println("Precision: " + PRECISION);
 		popularGrafo();
 		try {
@@ -58,7 +60,8 @@ public class CmcTP {
 		for (int i = 0; i < mapa.getPuntos().size(); i++) {
 			for (int j = i + 1; j < mapa.getPuntos().size(); j++) {
 				Camino camino = getCamino(mapa.getPuntos().get(i), mapa.getPuntos().get(j));
-				caminos.add(camino);
+				if (camino != null)
+					caminos.add(camino);
 			}
 		}
 		Collections.sort(caminos);
@@ -80,23 +83,27 @@ public class CmcTP {
 
 	private List<Camino> recorrido(LinkedList<Camino> caminos) {
 		List<Camino> recorrido = new ArrayList<>();
-		List<Punto> vertices = mapa.getPuntos();
+//		List<Punto> vertices = mapa.getPuntos();
 		Punto punto = vertices.get(0);
 		while (!(vertices.size() == 1)) {
-			// while(!vertices.isEmpty()){ //Para cerrar el camino
+			//while(!vertices.isEmpty()){ //Para cerrar el camino
 			for (Camino camino : caminos) {
 				if (camino.origen == punto) {
-					recorrido.add(camino);
-					vertices.remove(punto);
-					caminos.remove(camino);
-					punto = camino.destino;
-					break;
+					if (vertices.contains(camino.destino)){
+						recorrido.add(camino);
+						vertices.remove(punto);
+						caminos.remove(camino);
+						punto = camino.destino;
+						break;
+					}
 				} else if (camino.destino == punto) {
-					recorrido.add(camino);
-					vertices.remove(punto);
-					caminos.remove(camino);
-					punto = camino.origen;
-					break;
+					if (vertices.contains(camino.origen)){
+						recorrido.add(camino);
+						vertices.remove(punto);
+						caminos.remove(camino);
+						punto = camino.origen;
+						break;
+					}
 				}
 			}
 		}
@@ -170,7 +177,11 @@ public class CmcTP {
 		}
 		buscarCamino(nodosActivos, grafoParcial, origen);
 		Camino camino = grafoParcial.generarCamino(grafoParcial.getNodo(origen));
-		return camino;
+		if (camino != null)
+			return camino;
+		else
+			vertices.remove(origen);
+			return null;
 	}
 
 	private void buscarCamino(List<Nodo> nodosActivos, Grafo grafoParcial, Punto destino) {
@@ -250,10 +261,10 @@ public class CmcTP {
 				agregarNodo((int) rec.getMaxX() - 1, rec.y + i, false, true);
 			}
 			/** Para agilizar el algoritmo **/
-			// agregarNodo(rec.x,rec.y,true,true);
-			// agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
-			// agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
-			// agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
+//			 agregarNodo(rec.x,rec.y,true,true);
+//			 agregarNodo(rec.x,(int)rec.getMaxY()-1,true,false);
+//			 agregarNodo((int)rec.getMaxX()-1,(int)rec.getMaxY()-1,false,false);
+//			 agregarNodo((int)rec.getMaxX()-1,rec.y,false,true);
 		}
 	}
 

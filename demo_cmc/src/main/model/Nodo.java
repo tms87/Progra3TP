@@ -16,17 +16,6 @@ public class Nodo {
 		this.punto = punto;
 	}
 	
-//	@Override
-//	public boolean equals(Object obj) {
-//		return this.punto.equals(((Nodo)obj).punto);
-//	}
-//	
-//	@Override
-//	public int hashCode() {
-//		this.punto.hashCode();
-//		return super.hashCode();
-//	}
-	
 	public void removerArista(Punto punto){
 		for (Arista arista : aristas) {
 			if (arista.origen.igual(punto) || arista.destino.igual(punto)){
